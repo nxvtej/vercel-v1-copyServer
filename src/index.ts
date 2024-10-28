@@ -3,11 +3,12 @@ import cors from 'cors'
 import path from 'path'
 import { uploadfiletoBucket } from './cloudflare'
 import { generateRandomId } from './utils'
-import { getAllFiles } from './uploadfile'
+import { getAllFiles } from './getAllFiles'
 import { simpleGit } from 'simple-git'
 import { createClient } from 'redis'
 
 const publisher = createClient();
+const subscriber = createClient();
 const app = express()
 const port = 8000
 const git = simpleGit()
@@ -15,6 +16,7 @@ const git = simpleGit()
 app.use(cors())
 app.use(express.json())
 publisher.connect()
+subscriber.connect()
 
 app.post('/deploy', async (req, res) => {
 
@@ -42,15 +44,19 @@ app.post('/deploy', async (req, res) => {
         await uploadfiletoBucket(file.slice(__dirname.length + 1), file)
     })
     */
+
     for (const file of files) {
         const relativePath = path.relative(outputDir, file)
         const s3Key = path.join(`output/${id}`, relativePath).replace(/\\/g, '/')
         await uploadfiletoBucket(s3Key, file)
+        // could have get the response as array of status, and check all to be true
+        // iif not then some file not uploaded
     }
 
 
     publisher.lPush("build-id", id)
-
+    // set is llike insert 
+    publisher.hSet("status", id, "uploaded")
 
     console.log("files uploaded .")
     res.status(200).json({
@@ -58,7 +64,14 @@ app.post('/deploy', async (req, res) => {
         id: id
     })
 
+})
 
+app.get("/status", async (req, res) => {
+    const id = req.query.id;
+    const response = await subscriber.hGet("status", id as string)
+    res.json({
+        status: response
+    })
 })
 
 app.listen(port, () => {
@@ -66,36 +79,13 @@ app.listen(port, () => {
 })
 
 /*
-import express from 'express';
-import cors from 'cors';
-import path from 'path';
-import { simpleGit } from 'simple-git';
-import { S3UploadService } from './cloudflare';
 
-const app = express();
-const port = 8000;
-const git = simpleGit();
-const s3Service = new S3UploadService('vercel');
-
-app.use(cors());
-app.use(express.json());
 
 app.post('/deploy', async (req, res) => {
     try {
-        const { repoUrl } = req.body;
-        if (!repoUrl) {
-            return res.status(400).json({ error: 'Repository URL is required' });
-        }
+        
 
-        console.log("Github repo link:", repoUrl);
-        const id = generateRandomId();
-        console.log("Cloning id:", id);
-
-        const outputDir = path.join(__dirname, `output/${id}`);
-
-        // Clone repository
-        await git.clone(repoUrl, outputDir);
-
+      
         // Upload all files while maintaining directory structure
         const uploadResults = await s3Service.uploadDirectory(outputDir, `output/${id}`);
 
@@ -125,7 +115,4 @@ app.post('/deploy', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}...`);
-});
 */

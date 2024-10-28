@@ -43,18 +43,6 @@ export const uploadfiletoBucket = async (fileName: string, localFilePath: string
 
 /*
 // cloudflare.ts
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import fs from 'fs';
-import path from 'path';
-
-const s3Client = new S3Client({
-    region: "auto",
-    endpoint: process.env.S3_ENDPOINT || " ",
-    credentials: {  
-        accessKeyId: process.env.S3_ACCESS_KEY_ID || " ",
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || " ",
-    },
-});
 
 interface UploadResult {
     success: boolean;
