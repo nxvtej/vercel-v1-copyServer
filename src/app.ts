@@ -6,11 +6,13 @@ import { generateRandomId } from './utils'
 import { getAllFiles } from './getAllFiles'
 import { simpleGit } from 'simple-git'
 import { createClient } from 'redis'
+import dotenv from 'dotenv'
 
+dotenv.config()
 const publisher = createClient();
 const subscriber = createClient();
 const app = express()
-const port = 8000
+const port = process.env.PORT;
 const git = simpleGit()
 
 app.use(cors())
@@ -63,7 +65,6 @@ app.post('/deploy', async (req, res) => {
         message: "repo copied into ouput under id",
         id: id
     })
-
 })
 
 app.get("/status", async (req, res) => {
@@ -79,13 +80,8 @@ app.listen(port, () => {
 })
 
 /*
-
-
 app.post('/deploy', async (req, res) => {
     try {
-        
-
-      
         // Upload all files while maintaining directory structure
         const uploadResults = await s3Service.uploadDirectory(outputDir, `output/${id}`);
 
@@ -99,7 +95,6 @@ app.post('/deploy', async (req, res) => {
                 id
             });
         }
-
         // Clean up: Remove local files after successful upload
         await fs.promises.rm(outputDir, { recursive: true, force: true });
 
@@ -114,5 +109,4 @@ app.post('/deploy', async (req, res) => {
         });
     }
 });
-
 */
