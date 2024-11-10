@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import fs from 'fs'
 import dotenv from 'dotenv';
 dotenv.config();
@@ -38,6 +38,25 @@ export const uploadfiletoBucket = async (fileName: string, localFilePath: string
     catch (e) {
         console.log(e)
     }
+}
+
+export async function deleteAllObjects(bucketName: string) {
+    const listCommand = new ListObjectsV2Command({ Bucket: bucketName });
+    const listedObjects = await s3Bucket.send(listCommand);
+
+    if (!listedObjects.Contents || listedObjects.Contents.length === 0) {
+        console.log("Bucket is already empty.");
+        return;
+    }
+
+    // Prepare delete request
+    const deleteCommand = new DeleteObjectsCommand({
+        Bucket: bucketName,
+        Delete: { Objects: listedObjects.Contents.map(({ Key }) => ({ Key })) },
+    });
+
+    await s3Bucket.send(deleteCommand);
+    console.log("All objects have been deleted.");
 }
 
 

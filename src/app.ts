@@ -1,7 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
-import { uploadfiletoBucket } from './cloudflare'
+
+import { deleteAllObjects, uploadfiletoBucket } from './cloudflare'
 import { generateRandomId } from './utils'
 import { getAllFiles } from './getAllFiles'
 import { simpleGit } from 'simple-git'
@@ -12,7 +13,7 @@ dotenv.config()
 const publisher = createClient();
 const subscriber = createClient();
 const app = express()
-const port = process.env.PORT;
+const port = process.env.PORT || 8000;
 const git = simpleGit()
 
 app.use(cors())
@@ -23,8 +24,11 @@ subscriber.connect()
 app.post('/deploy', async (req, res) => {
 
     const repoUrl = req.body.repoUrl
+    const userCustomId = req.body.id
+
     console.log("github repo link:", repoUrl)
-    const id = generateRandomId()
+    const id = userCustomId ? userCustomId : generateRandomId()
+
     console.log("cloning id:", id)
     // await git.clone(repoUrl, `output/${id}`) inside root dir
 
@@ -75,6 +79,19 @@ app.get("/status", async (req, res) => {
     })
 })
 
+
+app.get("/delete", async (req, res) => {
+    // const id = req.query.id;
+    const bucket = "vercel"
+    deleteAllObjects(bucket);
+
+    res.json({
+        message: "All files deleted"
+    })
+
+})
+
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}...`)
 })
@@ -110,3 +127,7 @@ app.post('/deploy', async (req, res) => {
     }
 });
 */
+
+
+
+
