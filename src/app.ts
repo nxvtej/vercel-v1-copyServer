@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import path from 'path'
+import rateLimit from 'express-rate-limit'
 
 import { deleteAllObjects, uploadfiletoBucket } from './cloudflare'
 import { generateRandomId } from './utils'
@@ -21,7 +22,13 @@ app.use(express.json())
 publisher.connect()
 subscriber.connect()
 
-app.post('/deploy', async (req, res) => {
+
+const deployRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 2,
+})
+
+app.post('/deploy', deployRateLimiter, async (req, res) => {
 
     const repoUrl = req.body.repoUrl
     const userCustomId = req.body.id
@@ -71,7 +78,15 @@ app.post('/deploy', async (req, res) => {
     })
 })
 
-app.get("/status", async (req, res) => {
+
+
+const statusRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 25,
+})
+
+
+app.get("/status", statusRateLimiter, async (req, res) => {
     const id = req.query.id;
     const response = await subscriber.hGet("status", id as string)
     res.json({
@@ -80,7 +95,13 @@ app.get("/status", async (req, res) => {
 })
 
 
-app.get("/delete", async (req, res) => {
+
+const deleteRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 1,
+})
+
+app.get("/delete", deleteRateLimiter, async (req, res) => {
     // const id = req.query.id;
     const bucket = "vercel"
     deleteAllObjects(bucket);
